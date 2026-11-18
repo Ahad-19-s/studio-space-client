@@ -153,7 +153,7 @@ function RegisterForm() {
           </button>
         </div>
 
-        {/* Live password rules — errors shown in the form, never alert() */}
+        {/* Live password rules — errors shown inline in the form */}
         <ul className="grid grid-cols-1 gap-1.5 pt-1 sm:grid-cols-3">
           {rules.map((rule) => (
             <li
