@@ -63,7 +63,7 @@ export function EmptyState({
   icon?: ReactNode;
   title: string;
   description: string;
-  action?: { label: string; href: string };
+  action?: { label: string; href?: string; onClick?: () => void };
   className?: string;
 }) {
   return (
@@ -80,14 +80,23 @@ export function EmptyState({
       )}
       <h3 className="font-display text-2xl tracking-wide uppercase">{title}</h3>
       <p className="mt-2 max-w-md text-sm text-muted-foreground">{description}</p>
-      {action && (
-        <Link
-          href={action.href}
-          className="mt-6 inline-flex h-10 items-center rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-        >
-          {action.label}
-        </Link>
-      )}
+      {action &&
+        (action.onClick ? (
+          <button
+            type="button"
+            onClick={action.onClick}
+            className="mt-6 inline-flex h-10 items-center rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            {action.label}
+          </button>
+        ) : (
+          <Link
+            href={action.href || "/"}
+            className="mt-6 inline-flex h-10 items-center rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            {action.label}
+          </Link>
+        ))}
     </div>
   );
 }
