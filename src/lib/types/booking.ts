@@ -11,8 +11,10 @@ export interface IBooking {
   _id: string;
   studioId: string;
   studioTitle: string;
-  userEmail: string;
-  userName: string;
+  /** Booker email — the server's /booking/:email lookup key. */
+  email?: string;
+  userEmail?: string;
+  userName?: string;
   bookingDate: string; // YYYY-MM-DD
   startTime: string; // HH:MM (24h)
   endTime: string; // HH:MM (24h)
@@ -21,10 +23,14 @@ export interface IBooking {
   createdAt: string; // ISO date
 }
 
-// Shape sent to POST /bookings.
+// Shape sent to POST /booking (the server appends status: "Pending").
 export interface IBookingPayload {
   studioId: string;
+  studioTitle: string;
+  email: string;
+  userName: string;
   bookingDate: string;
   startTime: string;
   endTime: string;
+  totalPrice: number;
 }

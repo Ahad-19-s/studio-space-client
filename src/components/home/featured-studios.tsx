@@ -9,8 +9,8 @@ import { SectionHeading, EmptyState } from "@/components/shared";
 import { api } from "@/lib/api";
 import type { IStudio } from "@/lib/types/studio";
 
-// Fetches the 6 top-rated studios straight from MongoDB via the
-// Express server's /featured-studios endpoint (sorts by rating, limit 6).
+// Fetches the studios and picks the 6 top-rated ones (the server has no
+// dedicated featured endpoint, so we sort by rating and limit client-side).
 export default function FeaturedStudios() {
   const [studios, setStudios] = useState<IStudio[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,9 +20,12 @@ export default function FeaturedStudios() {
     let cancelled = false;
 
     api
-      .get<IStudio[]>("/featured-studios")
+      .get<IStudio[]>("/explore-studios")
       .then((data) => {
-        if (!cancelled) setStudios(Array.isArray(data) ? data : []);
+        if (cancelled) return;
+        const list = Array.isArray(data) ? data : [];
+        list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        setStudios(list.slice(0, 6));
       })
       .catch(() => {
         if (!cancelled) setFailed(true);

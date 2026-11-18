@@ -21,15 +21,18 @@ export interface IStudio {
   gallery?: string[];
   amenities: string[];
   overview: string;
-  ownerName: string;
-  ownerEmail: string;
+  /** Owner email — the server's /my-listing/:email lookup key. */
+  email?: string;
+  ownerName?: string;
+  ownerEmail?: string;
   rating: number; // average of review ratings
   reviews?: IReview[];
   createdAt: string; // ISO date
   updatedAt: string; // ISO date
 }
 
-// Shape sent to POST /add-studio and PATCH /studio/:id.
+// Shape sent to POST /add-studio and PATCH /my-listing-update/:id.
+// `email` is the owner lookup key used by /my-listing/:email.
 export interface IStudioPayload {
   title: string;
   category: string;
@@ -41,4 +44,7 @@ export interface IStudioPayload {
   gallery?: string[];
   amenities: string[];
   overview: string;
+  email?: string;
+  ownerName?: string;
+  ownerEmail?: string;
 }
