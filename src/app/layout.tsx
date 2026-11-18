@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Bebas_Neue } from "next/font/google";
 import "./globals.css";
 import Providers from "@/providers";
 import Navbar from "@/components/navbar";
@@ -15,16 +15,28 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Cinematic display face used for the logo and every section heading.
+const bebas = Bebas_Neue({
+  weight: "400",
+  variable: "--font-display",
+  subsets: ["latin"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "StudioSpace",
-  description: "Find and book studios near you",
+  title: {
+    default: "StudioSpace — Peer-to-Peer Creative Studios",
+    template: "%s | StudioSpace",
+  },
+  description:
+    "Discover and book photography studios, sound stages, podcast lounges and music suites by the hour. Host your creative space on StudioSpace.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${bebas.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">

@@ -1,34 +1,285 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useTheme } from "next-themes";
+import { Aperture, ChevronDown, LogOut, Menu, Moon, Plus, Sun, X } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
+import { NAV_LINKS } from "@/lib/constants";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+
+function cn(...classes: (string | false | null | undefined)[]) {
+  return classes.filter(Boolean).join(" ");
+}
+
+// Maps a nav href to the pathname it should highlight as active.
+function isActive(pathname: string, href: string): boolean {
+  if (href === "/") return pathname === "/";
+  const base = href.split("#")[0];
+  if (!base || base === "/") return pathname === "/";
+  return pathname === base || pathname.startsWith(`${base}/`);
+}
 
 export default function Navbar() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  const { data: session, isPending } = authClient.useSession();
+  const user = session?.user;
+
+  useEffect(() => setMounted(true), []);
+
+  // Close the profile dropdown on outside click / route change.
+  useEffect(() => {
+    setProfileOpen(false);
+    setMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!profileOpen) return;
+    const onClick = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [profileOpen]);
+
+  async function handleLogout() {
+    try {
+      await authClient.signOut();
+      toast.success("Signed out successfully.");
+      router.push("/");
+      router.refresh();
+    } catch {
+      toast.error("Could not sign out. Please try again.");
+    }
+  }
+
+  const toggleTheme = () => setTheme(resolvedTheme === "dark" ? "light" : "dark");
+
   return (
-    <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-black/80">
-      <nav className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4">
-        <Link href="/" className="text-lg font-bold tracking-tight">
-          StudioSpace
+    <header className="sticky top-0 z-50 border-b border-border bg-background/85 backdrop-blur-md">
+      <nav className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2 shrink-0">
+          <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <Aperture className="size-5" aria-hidden />
+          </span>
+          <span className="font-display text-2xl leading-none tracking-wide uppercase">
+            Studio<span className="text-primary">Space</span>
+          </span>
         </Link>
 
-        <div className="flex items-center gap-5 text-sm font-medium">
-          <Link href="/studios" className="hover:text-zinc-600 dark:hover:text-zinc-300">
-            Studios
-          </Link>
-          <Link href="/add-studio" className="hover:text-zinc-600 dark:hover:text-zinc-300">
-            Add Studio
-          </Link>
-          <Link href="/my-listings" className="hover:text-zinc-600 dark:hover:text-zinc-300">
-            My Listings
-          </Link>
-          <Link href="/my-bookings" className="hover:text-zinc-600 dark:hover:text-zinc-300">
-            My Bookings
-          </Link>
-          <Link
-            href="/login"
-            className="rounded-full bg-zinc-900 px-4 py-1.5 text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+        {/* Desktop nav links with active-route indicators */}
+        <div className="hidden items-center gap-1 lg:flex">
+          {NAV_LINKS.map((link) => {
+            const active = isActive(pathname, link.href);
+            return (
+              <Link
+                key={link.label}
+                href={link.href}
+                className={cn(
+                  "relative rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  active
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {link.label}
+                {active && (
+                  <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-primary" />
+                )}
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Theme toggle (Challenge 3) */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+            className="flex size-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:text-foreground"
           >
-            Login
-          </Link>
+            {mounted &&
+              (resolvedTheme === "dark" ? (
+                <Sun className="size-4" />
+              ) : (
+                <Moon className="size-4" />
+              ))}
+          </button>
+
+          {isPending ? (
+            <div className="hidden h-9 w-24 animate-pulse rounded-lg bg-muted sm:block" />
+          ) : user ? (
+            /* ---------- Authenticated: avatar + dropdown ---------- */
+            <div ref={profileRef} className="relative hidden sm:block">
+              <button
+                type="button"
+                onClick={() => setProfileOpen((open) => !open)}
+                aria-expanded={profileOpen}
+                className="flex items-center gap-2 rounded-lg border border-border py-1 pl-1 pr-2 transition-colors hover:bg-muted"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={
+                    user.image ||
+                    `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(user.name || user.email || "U")}`
+                  }
+                  alt={user.name || "User"}
+                  className="size-8 rounded-md object-cover"
+                />
+                <span className="max-w-28 truncate text-sm font-medium">
+                  {user.name}
+                </span>
+                <ChevronDown className="size-3.5 text-muted-foreground" />
+              </button>
+
+              {profileOpen && (
+                <div className="absolute right-0 top-full mt-2 w-60 overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-xl">
+                  <div className="border-b border-border px-4 py-3">
+                    <p className="truncate text-sm font-semibold">{user.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {user.email}
+                    </p>
+                  </div>
+                  <div className="p-1.5">
+                    <DropdownItem href="/dashboard">Dashboard</DropdownItem>
+                    <DropdownItem href="/add-studio">
+                      <Plus className="size-4" /> Add New Studio
+                    </DropdownItem>
+                    <DropdownItem href="/my-listings">My Studio Listings</DropdownItem>
+                    <DropdownItem href="/my-bookings">My Bookings</DropdownItem>
+                    <DropdownItem href="/wishlist">Saved Studios</DropdownItem>
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-600 transition-colors hover:bg-red-500/10 dark:text-red-400"
+                    >
+                      <LogOut className="size-4" /> Logout
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* ---------- Unauthenticated: login + register ---------- */
+            <div className="hidden items-center gap-2 sm:flex">
+              <Link
+                href="/login"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Login
+              </Link>
+              <Link
+                href="/register"
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-transform hover:bg-primary/90 active:scale-95"
+              >
+                Register
+              </Link>
+            </div>
+          )}
+
+          {/* Mobile menu trigger */}
+          <button
+            type="button"
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-label="Toggle menu"
+            className="flex size-9 items-center justify-center rounded-lg border border-border lg:hidden"
+          >
+            {menuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
+          </button>
         </div>
       </nav>
+
+      {/* Mobile menu */}
+      {menuOpen && (
+        <div className="border-t border-border bg-background px-4 py-3 lg:hidden">
+          <div className="flex flex-col gap-1">
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.label}
+                href={link.href}
+                className={cn(
+                  "rounded-lg px-3 py-2 text-sm font-medium",
+                  isActive(pathname, link.href)
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                {link.label}
+              </Link>
+            ))}
+            <div className="mt-2 border-t border-border pt-3">
+              {user ? (
+                <div className="flex flex-col gap-1">
+                  <Link href="/dashboard" className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted">
+                    Dashboard
+                  </Link>
+                  <Link href="/add-studio" className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted">
+                    Add New Studio
+                  </Link>
+                  <Link href="/my-listings" className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted">
+                    My Studio Listings
+                  </Link>
+                  <Link href="/my-bookings" className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted">
+                    My Bookings
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="rounded-lg px-3 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-500/10 dark:text-red-400"
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Link
+                    href="/login"
+                    className="flex-1 rounded-lg border border-border px-3 py-2 text-center text-sm font-medium"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="flex-1 rounded-lg bg-primary px-3 py-2 text-center text-sm font-semibold text-primary-foreground"
+                  >
+                    Register
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </header>
+  );
+}
+
+function DropdownItem({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted"
+    >
+      {children}
+    </Link>
   );
 }

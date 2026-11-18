@@ -3,24 +3,52 @@ import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
 import { jwt } from "better-auth/plugins";
 
+// One shared MongoDB client for the Next.js auth handler.
+// IMPORTANT: this must point at the same database + secret as the
+// Express server (studiospace-server) so a session created here is
+// also accepted by the server's requireAuth middleware.
 const client = new MongoClient(process.env.MONGODB_URI as string);
-const db = client.db("wanderlust");
+const db = client.db("studioSpace");
 
 export const auth = betterAuth({
+  secret: process.env.BETTER_AUTH_SECRET,
+
+  // Public URL of this Next.js app (cookies + OAuth redirects).
+  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+
   database: mongodbAdapter(db, {
     client,
   }),
-   emailAndPassword: { 
-    enabled: true, 
-  }, 
+
+  emailAndPassword: {
+    enabled: true,
+    // Assignment rule: passwords must be at least 6 characters.
+    minPasswordLength: 6,
+  },
+
+  // Users live in the "users" collection, matching the Express server.
+  user: {
+    modelName: "users",
+    additionalFields: {
+      photoURL: {
+        type: "string",
+        required: false,
+        defaultValue: "",
+        returned: true,
+      },
+    },
+  },
+
   plugins: [jwt()],
+
   session: {
     cookieCache: {
       enabled: true,
-      strategy: 'jwt',
-      maxAge: 7 * 24 * 60 * 60
-    }
+      strategy: "jwt",
+      maxAge: 7 * 24 * 60 * 60,
+    },
   },
+
   socialProviders: {
     // Only registered when credentials exist, so email login keeps working
     // before you add the OAuth apps.
@@ -37,6 +65,19 @@ export const auth = betterAuth({
           github: {
             clientId: process.env.GITHUB_CLIENT_ID,
             clientSecret: process.env.GITHUB_CLIENT_SECRET,
+          },
+        }
+      : {}),
+  },
+
+  advanced: {
+    // In production the API lives on another domain, so the session
+    // cookie must be SameSite=None to be sent with API requests.
+    ...(process.env.COOKIE_SAMESITE
+      ? {
+          defaultCookieAttributes: {
+            sameSite: process.env.COOKIE_SAMESITE as "lax" | "none" | "strict",
+            secure: true,
           },
         }
       : {}),
