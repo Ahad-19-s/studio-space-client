@@ -2,7 +2,10 @@
 // Mutations are sent with `Authorization: Bearer <jwt>` — the JWT comes
 // from BetterAuth's /api/auth/token endpoint (same origin, session cookie)
 // and is verified server-side against our JWKS.
-const BASE = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:5000";
+const BASE =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.NEXT_PUBLIC_SERVER_URL ||
+  "http://localhost:8000";
 
 export class ApiError extends Error {
   status: number;

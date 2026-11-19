@@ -8,8 +8,13 @@ import { jwt } from "better-auth/plugins";
 // Express server (studiospace-server) so a session created here is
 // also accepted by the server's requireAuth middleware.
 // Accepts either env var name — the server's .env uses MONGO_DB_URI.
+// The placeholder keeps `next build` from throwing when env vars are
+// absent (module evaluation happens during page-data collection);
+// real requests only occur at runtime, where the env must be set.
 const MONGO_URI =
-  process.env.MONGODB_URI || process.env.MONGO_DB_URI || "";
+  process.env.MONGODB_URI ||
+  process.env.MONGO_DB_URI ||
+  "mongodb://127.0.0.1:27017/studioSpace";
 const client = new MongoClient(MONGO_URI);
 const db = client.db("studioSpace");
 
