@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { CalendarDays, Clock, X } from "lucide-react";
@@ -30,9 +30,14 @@ export default function BookingModal({
   const [endTime, setEndTime] = useState("13:00");
   const [submitting, setSubmitting] = useState(false);
 
-  const today = useMemo(() => {
+  // Deferred to an effect: `new Date()` during render breaks the
+  // static prerender of pages that mount this modal.
+  const [today, setToday] = useState("");
+  useEffect(() => {
     const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    setToday(
+      `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
+    );
   }, []);
 
   // Client-side estimate — the server recalculates authoritatively.
@@ -42,7 +47,7 @@ export default function BookingModal({
     const [eh, em] = endTime.split(":").map(Number);
     const minutes = eh * 60 + em - (sh * 60 + sm);
     if (minutes <= 0) return null;
-    return Math.round((studio.hourlyRate * (minutes / 60)) * 100) / 100;
+    return Math.round(studio.hourlyRate * (minutes / 60) * 100) / 100;
   }, [bookingDate, startTime, endTime, studio.hourlyRate]);
 
   if (!open) return null;
@@ -189,7 +194,7 @@ export default function BookingModal({
 
               <p className="text-xs leading-relaxed text-muted-foreground">
                 Your booking is saved as <strong>Pending</strong> until the host
-                confirms it. Cancel any time while it's still pending.
+                confirms it. Cancel any time while its still pending.
               </p>
 
               <button

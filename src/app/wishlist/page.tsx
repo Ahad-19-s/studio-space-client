@@ -7,7 +7,7 @@ import { useRequireAuth } from "@/lib/session";
 import { api, ApiError } from "@/lib/api";
 import { PageLoader, StudioGridSkeleton } from "@/components/loaders";
 import { Container, EmptyState, SectionHeading } from "@/components/shared";
-import StudioCard from "@/components/studio-card";
+import StudioCard from "@/components/studio/studio-card";
 import type { IStudio } from "@/lib/types/studio";
 
 export default function WishlistPage() {

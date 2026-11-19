@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import StudioCard from "@/components/studio-card";
+import StudioCard from "@/components/studio/studio-card";
 import { StudioGridSkeleton } from "@/components/loaders";
 import { Container, EmptyState, SectionHeading } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";

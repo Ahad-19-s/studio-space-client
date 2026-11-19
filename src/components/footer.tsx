@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Aperture, Check } from "lucide-react";
 import { FaXTwitter, FaInstagram, FaYoutube, FaLinkedinIn } from "react-icons/fa6";
 import { toast } from "sonner";
@@ -17,6 +17,13 @@ const SOCIALS = [
 export default function Footer() {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
+
+  // Year is read after mount so the static prerender doesn't trip
+  // on an unstable `new Date()` value.
+  const [copyrightYear, setCopyrightYear] = useState<number | null>(null);
+  useEffect(() => {
+    setCopyrightYear(new Date().getFullYear());
+  }, []);
 
   function handleNewsletter(event: React.FormEvent) {
     event.preventDefault();
@@ -146,7 +153,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row">
-          <p>© {new Date().getFullYear()} StudioSpace. All rights reserved.</p>
+          <p>© {copyrightYear ?? 2026} StudioSpace. All rights reserved.</p>
           <p className="text-center sm:text-right">
             Built for creators, by creators. · Terms of Service · Privacy Policy
           </p>

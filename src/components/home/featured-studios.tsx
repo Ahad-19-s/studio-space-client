@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
-import StudioCard from "@/components/studio-card";
+import StudioCard from "@/components/studio/studio-card";
 import { StudioGridSkeleton } from "@/components/loaders";
 import { SectionHeading, EmptyState } from "@/components/shared";
 import { api } from "@/lib/api";

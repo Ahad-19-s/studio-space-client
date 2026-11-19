@@ -6,7 +6,7 @@ import { useRequireAuth } from "@/lib/session";
 import { api } from "@/lib/api";
 import { PageLoader } from "@/components/loaders";
 import { Container, SectionHeading } from "@/components/shared";
-import StudioForm from "@/components/studio-form";
+import StudioForm from "@/components/studio/studio-form";
 import type { IStudioPayload } from "@/lib/types/studio";
 
 export default function AddStudioPage() {
