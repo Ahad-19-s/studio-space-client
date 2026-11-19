@@ -9,8 +9,8 @@ import { SectionHeading, EmptyState } from "@/components/shared";
 import { api } from "@/lib/api";
 import type { IStudio } from "@/lib/types/studio";
 
-// Fetches the studios and picks the 6 top-rated ones (the server has no
-// dedicated featured endpoint, so we sort by rating and limit client-side).
+// Featured Studios: the server applies MongoDB's `.limit(6)` for us, so only
+// the top-rated spaces travel over the wire instead of the whole directory.
 export default function FeaturedStudios() {
   const [studios, setStudios] = useState<IStudio[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,12 +20,10 @@ export default function FeaturedStudios() {
     let cancelled = false;
 
     api
-      .get<IStudio[]>("/explore-studios")
+      .get<IStudio[]>("/explore-studios?sort=rating&limit=6")
       .then((data) => {
         if (cancelled) return;
-        const list = Array.isArray(data) ? data : [];
-        list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        setStudios(list.slice(0, 6));
+        setStudios(Array.isArray(data) ? data : []);
       })
       .catch(() => {
         if (!cancelled) setFailed(true);
@@ -64,7 +62,7 @@ export default function FeaturedStudios() {
           />
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {studios.slice(0, 6).map((studio) => (
+            {studios.map((studio) => (
               <StudioCard key={studio._id} studio={studio} />
             ))}
           </div>
