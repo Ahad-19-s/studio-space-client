@@ -42,3 +42,4 @@ next-env.d.ts
 
 tsc-out.txt
 tsc-output.txt
+.vercel

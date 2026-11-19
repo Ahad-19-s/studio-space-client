@@ -1,4 +1,4 @@
-import HeroSlider from "@/components/home/hero-slider";
+import Hero from "@/components/home/hero";
 import FeaturedStudios from "@/components/home/featured-studios";
 import BrowseCategories from "@/components/home/browse-categories";
 import HowBookingWorks from "@/components/home/how-booking-works";
@@ -8,7 +8,7 @@ import AboutCta from "@/components/home/about-cta";
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
-      <HeroSlider />
+      <Hero />
       <FeaturedStudios />
       <BrowseCategories />
       <HowBookingWorks />

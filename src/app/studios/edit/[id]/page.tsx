@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -11,10 +11,10 @@ import { PageLoader } from "@/components/loaders";
 import { Container, EmptyState, SectionHeading } from "@/components/shared";
 import StudioForm, {
   type StudioFormValues,
-} from "@/components/studio-form";
+} from "@/components/studio/studio-form";
 import type { IStudio, IStudioPayload } from "@/lib/types/studio";
 
-export default function EditStudioPage() {
+function EditStudioContent() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const studioId = params?.id;
@@ -119,5 +119,21 @@ export default function EditStudioPage() {
         />
       </div>
     </Container>
+  );
+}
+
+// `useParams` suspends during prerender (the id isn't known until
+// request time) — the boundary lets the static shell stream.
+export default function EditStudioPage() {
+  return (
+    <Suspense
+      fallback={
+        <Container className="py-12">
+          <div className="h-[480px] animate-pulse rounded-2xl border border-border bg-muted" />
+        </Container>
+      }
+    >
+      <EditStudioContent />
+    </Suspense>
   );
 }

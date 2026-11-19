@@ -7,7 +7,10 @@ import { jwt } from "better-auth/plugins";
 // IMPORTANT: this must point at the same database + secret as the
 // Express server (studiospace-server) so a session created here is
 // also accepted by the server's requireAuth middleware.
-const client = new MongoClient(process.env.MONGODB_URI as string);
+// Accepts either env var name — the server's .env uses MONGO_DB_URI.
+const MONGO_URI =
+  process.env.MONGODB_URI || process.env.MONGO_DB_URI || "";
+const client = new MongoClient(MONGO_URI);
 const db = client.db("studioSpace");
 
 export const auth = betterAuth({

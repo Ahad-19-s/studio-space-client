@@ -2,12 +2,8 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, Pagination } from "swiper/modules";
-import "swiper/css";
-import "swiper/css/navigation";
-import "swiper/css/pagination";
 import {
   ArrowLeft,
   Calendar,
@@ -20,11 +16,18 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { StudioDetailsSkeleton, Spinner } from "@/components/loaders";
 import { Container, EmptyState } from "@/components/shared";
-import BookingModal from "@/components/booking-modal";
+import BookingModal from "@/components/booking/booking-modal";
 import WishlistButton from "@/components/wishlist-button";
 import { api } from "@/lib/api";
 import type { IStudio } from "@/lib/types/studio";
 import { cn } from "cn";
+
+// Swiper bails out of the server render, so the gallery must be
+// client-only (see the comment in studio-gallery.tsx).
+const StudioGallery = dynamic(
+  () => import("@/components/studio/studio-gallery"),
+  { ssr: false }
+);
 
 function StudioDetails() {
   const params = useParams<{ id: string }>();
@@ -100,26 +103,8 @@ function StudioDetails() {
       </Link>
 
       {/* ---------- Gallery carousel ---------- */}
-      <div className="mt-5 overflow-hidden rounded-2xl border border-border bg-black">
-        <Swiper
-          modules={[Navigation, Pagination]}
-          navigation
-          pagination={{ clickable: true }}
-          spaceBetween={0}
-          slidesPerView={1}
-          className="aspect-[16/8] w-full"
-        >
-          {gallery.map((image, index) => (
-            <SwiperSlide key={`${image}-${index}`}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={image}
-                alt={`${studio.title} — photo ${index + 1}`}
-                className="h-full w-full object-cover"
-              />
-            </SwiperSlide>
-          ))}
-        </Swiper>
+      <div className="mt-5">
+        <StudioGallery images={gallery} title={studio.title} />
       </div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-3">

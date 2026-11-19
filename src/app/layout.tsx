@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono, Bebas_Neue } from "next/font/google";
 import "./globals.css";
 import Providers from "@/providers";
@@ -23,6 +24,11 @@ const bebas = Bebas_Neue({
   display: "swap",
 });
 
+// The Navbar (usePathname/useTheme/useSession) and every client page
+// block on runtime-only hook values during prerender — allow blocking
+// routes app-wide instead of forcing a static shell.
+export const instant = false;
+
 export const metadata: Metadata = {
   title: {
     default: "StudioSpace — Peer-to-Peer Creative Studios",
@@ -41,7 +47,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <Providers>
-          <Navbar />
+          {/* Navbar reads usePathname — on dynamic routes (no
+              generateStaticParams) that can't resolve during prerender,
+              so it needs its own boundary above the page. */}
+          <Suspense
+            fallback={
+              <div className="h-16 w-full animate-pulse border-b border-border bg-background" />
+            }
+          >
+            <Navbar />
+          </Suspense>
           <div className="flex flex-1 flex-col">{children}</div>
           <Footer />
         </Providers>
