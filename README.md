@@ -20,9 +20,10 @@ hour — and hosts turn idle studio hours into steady income.
 - **Complete studio CRUD** — add a studio (category select, hourly rate,
   deposit, capacity, amenities tag picker, image URL + optional upload,
   read-only host info), owner-only **My Studio Listings** with
-  confirmation-modal delete, and a prefilled **Edit** page. All mutations
-  are protected by a BetterAuth **JWT** (Bearer token verified against the
-  server's JWKS) — unauthenticated requests get a 401, never silent writes.
+  confirmation-modal delete, and a prefilled **Edit** page. Every mutation
+  is authorised by the BetterAuth **HTTPOnly session cookie** (with a
+  Bearer-JWT fallback) — unauthenticated requests get a 401 and other
+  users' records get a 403, never silent writes.
 - **Booking lifecycle** — bookable modal on studio details (date, start/end
   hours, live price estimate), bookings saved as **Pending** with
   status badges (Pending / Confirmed / Completed / Cancelled), one-click
@@ -59,16 +60,15 @@ npm install
 Create `.env` in the server folder:
 
 ```bash
-MONGODB_URI=your-mongodb-connection-string
-MONGO_DB_URI=your-mongodb-connection-string   # same value; used by index.js
+MONGO_DB_URI=your-mongodb-connection-string   # index.js reads this one
+MONGODB_URI=your-mongodb-connection-string    # accepted as a fallback
 CLIENT_URL=http://localhost:3000              # where the Next.js app runs
 BETTER_AUTH_URL=http://localhost:3000
 BETTER_AUTH_SECRET=your-shared-better-auth-secret
-JWT_SECRET=your-jwt-secret
 ```
 
 ```bash
-npm start        # API on http://localhost:5000
+npm start        # API on http://localhost:8000
 ```
 
 ### 2. Client (`studiospace-client`)
@@ -80,12 +80,13 @@ npm install
 Create `.env.local`:
 
 ```bash
-MONGODB_URI=your-mongodb-connection-string    # same DB as the server
+MONGO_DB_URI=your-mongodb-connection-string    # same DB as the server
 BETTER_AUTH_SECRET=your-shared-better-auth-secret
 BETTER_AUTH_URL=http://localhost:3000
-NEXT_PUBLIC_SERVER_URL=http://localhost:5000  # Express API base URL
-NEXT_PUBLIC_IMGBB_API_KEY=                    # optional: enables image upload
-GOOGLE_CLIENT_ID=                             # optional: enables Google login
+NEXT_PUBLIC_API_URL=http://localhost:8000      # Express API base URL
+NEXT_PUBLIC_SERVER_URL=http://localhost:8000   # fallback if the above is unset
+NEXT_PUBLIC_IMGBB_API_KEY=                     # optional: enables image upload
+GOOGLE_CLIENT_ID=                              # optional: enables Google login
 GOOGLE_CLIENT_SECRET=
 ```
 
@@ -104,7 +105,7 @@ npm run dev      # http://localhost:3000
 | Host  | `alice@example.com` | `StudioSpace123!` |
 | Renter| `bob@example.com`   | `StudioSpace123!` |
 
-- **Alice (host)** owns 5 seeded listings → test *Dashboard*, *My Studio
+- **Alice (host)** owns 6 seeded listings → test *Dashboard*, *My Studio
   Listings*, *Update* and *Delete*.
 - **Bob (renter)** has 3 bookings (Pending / Confirmed / Cancelled) and 1
   saved studio → test *My Bookings*, *Cancel*, *PDF Invoice* and *Saved
@@ -116,11 +117,17 @@ npm run dev      # http://localhost:3000
 
 ## 🔐 Challenges Solved
 
-1. **Protected mutations** — every write sends `Authorization: Bearer <jwt>`;
-   the token is minted by BetterAuth (`/api/auth/token`, session cookie) and
-   verified against `/api/auth/jwks`. Missing/invalid tokens → 401.
-2. **Double-booking prevention** — the server takes a per-studio/date lock,
-   checks `Pending`/`Confirmed` overlaps (`newStart < existingEnd &&
-   newEnd > existingStart`) and answers 409 with a human-readable message.
-3. **Theme toggle** — class-based dark mode (next-themes) with a navbar
-   switch and Sonner toaster synced to the active theme.
+1. **HTTPOnly cookie security (Challenge 1)** — the Express API rebuilds the
+   same BetterAuth instance (same secret, same MongoDB adapter) and calls
+   `getSession()` with the incoming headers, so the browser's
+   `better-auth.session_token` **HttpOnly** cookie authorises each mutation.
+   Requests without it get `401`, and touching another user's record gets
+   `403`. A Bearer JWT verified against `/api/auth/jwks` is kept as a
+   fallback. CORS is locked to the client origin with `credentials: true`.
+2. **Double-booking prevention (Challenge 2)** — before inserting, the server
+   matches existing `Pending`/`Confirmed` bookings with the half-open overlap
+   test (`newStart < existingEnd && newEnd > existingStart`) and answers
+   `409` with a human-readable message. Date/time formats are validated so
+   the string comparison can't be bypassed, and cancelling frees the slot.
+3. **Theme toggle (Challenge 3)** — class-based dark mode (next-themes) with
+   a navbar switch and Sonner toaster synced to the active theme.
