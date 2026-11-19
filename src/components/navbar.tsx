@@ -15,15 +15,27 @@ function cn(...classes: (string | false | null | undefined)[]) {
 }
 
 // Maps a nav href to the pathname it should highlight as active.
-function isActive(pathname: string, href: string): boolean {
-  if (href === "/") return pathname === "/";
-  const base = href.split("#")[0];
-  if (!base || base === "/") return pathname === "/";
-  return pathname === base || pathname.startsWith(`${base}/`);
+// Hash links (`/#how-it-works`) are only active when we are on that page *and*
+// the matching section hash is set — otherwise Home, How It Works and About Us
+// would all light up together on "/".
+function isActive(pathname: string, href: string, hash: string): boolean {
+  const [base, fragment] = href.split("#");
+  const target = base || "/";
+  // Root only matches itself; other links also match nested routes
+  // (e.g. "/studios" stays active on "/studios/edit/<id>").
+  const matches =
+    target === "/"
+      ? pathname === "/"
+      : pathname === target || pathname.startsWith(`${target}/`);
+  if (!matches) return false;
+  // A hash link is active only when its section is the current one.
+  if (fragment) return hash === `#${fragment}`;
+  return true;
 }
 
 export default function Navbar() {
   const pathname = usePathname();
+  const [hash, setHash] = useState("");
   const router = useRouter();
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -35,6 +47,15 @@ export default function Navbar() {
   const user = session?.user;
 
   useEffect(() => setMounted(true), []);
+
+  // Track the section hash so `/#how-it-works` and `/#about` can show their own
+  // active indicator instead of all "/" links highlighting at once.
+  useEffect(() => {
+    const sync = () => setHash(window.location.hash);
+    sync();
+    window.addEventListener("hashchange", sync);
+    return () => window.removeEventListener("hashchange", sync);
+  }, [pathname]);
 
   // Close the profile dropdown on outside click / route change.
   useEffect(() => {
@@ -82,7 +103,7 @@ export default function Navbar() {
         {/* Desktop nav links with active-route indicators */}
         <div className="hidden items-center gap-1 lg:flex">
           {NAV_LINKS.map((link) => {
-            const active = isActive(pathname, link.href);
+            const active = isActive(pathname, link.href, hash);
             return (
               <Link
                 key={link.label}
@@ -212,7 +233,7 @@ export default function Navbar() {
                 href={link.href}
                 className={cn(
                   "rounded-lg px-3 py-2 text-sm font-medium",
-                  isActive(pathname, link.href)
+                  isActive(pathname, link.href, hash)
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
